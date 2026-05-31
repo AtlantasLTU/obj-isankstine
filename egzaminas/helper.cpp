@@ -178,3 +178,40 @@ void crossReference(const std::string& fileName) {
         }
     }
 }
+
+void extractUrls(const std::string& fileName) {
+    std::ifstream in(fileName);
+    std::string content((std::istreambuf_iterator<char>(in)),
+                         std::istreambuf_iterator<char>());
+    std::regex url_regex(R"((https?://)?(www\.)?([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})(/[^\s]*)?)");
+    std::set<std::string> found;
+    std::sregex_iterator it(content.begin(), content.end(), url_regex);
+    std::sregex_iterator end;
+    for (; it != end; ++it) {
+        std::string domain = (*it)[3];
+        std::unordered_set<std::string> tlds = loadTlds("tlds-alpha-by-domain.txt");
+        size_t last_dot = domain.rfind('.');
+        if (last_dot != std::string::npos) {
+            std::string tld = domain.substr(last_dot + 1);
+            if (tlds.find(tld) != tlds.end()) {
+                found.insert(it->str());
+            }
+        }
+    }
+    std::ofstream out("urls.txt");
+    for (const auto& url : found) {
+        out << url << "\n";
+    }
+}
+
+std::unordered_set<std::string> loadTlds(const std::string& path) {
+    std::ifstream in(path);
+    std::unordered_set<std::string> tlds;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+        tlds.insert(line);
+    }
+    return tlds;
+}

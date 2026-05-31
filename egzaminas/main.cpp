@@ -28,5 +28,6 @@ int main(){
             out << X.first << " " << X.second << std::endl;
     }
     crossReference(failoPavadinimas);
+    extractUrls(failoPavadinimas);
     return 0;
 }

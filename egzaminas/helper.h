@@ -6,6 +6,8 @@
 #include <unicode/utf8.h>
 #include <map>
 #include <set>
+#include <regex>
+#include <unordered_set>
 #include "main.h"
 
 /**
@@ -49,5 +51,9 @@ std::string cleanZodis(const std::string& zodis);
 std::string toLowerUnicode(const std::string& zodis);
 
 void crossReference(const std::string& fileName);
+
+void extractUrls(const std::string& fileName);
+
+std::unordered_set<std::string> loadTlds(const std::string& path);
 
 #endif
