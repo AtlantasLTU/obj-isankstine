@@ -116,39 +116,39 @@ std::string cleanZodis(const std::string& zodis) {
         unsigned char c = zodis[i];
 
         bool isQuote = false;
-        for (const auto& q : quotes) {
+        for (const auto& q : quotes) { // pereiname pro quotes masyva, ieskodami ar zodzio simbolis sutampa su kazkuriuo is quotes (kabuciu) elementu
             if (zodis.compare(i, q.size(), q) == 0) {
                 isQuote = true;
-                i += q.size();
+                i += q.size(); 
                 break;
             }
-        }
+        } // jeigu randamos kabutes, tai simbolis praleidziamas
         if (isQuote) continue;
-        if (c <= 0x7F) {
+        if (c <= 0x7F) { // jeigu simbolis ASCII, patikrina ar tai ne skyrybos zenklas, skaicius ar tarpas ir prideda ji prie clean string'o, taip kuria nauja svaru zodi
             if (!std::ispunct(c) && !std::isdigit(c) && !isspace(c))
                 clean += static_cast<char>(c);
             i++;
-        } else {
+        } else { // jeigu simbolis ne ASCII, tai 
             UChar32 cp;
             int32_t offset = 0;
-            U8_NEXT(zodis.data() + i, offset, (int32_t)(zodis.size() - i), cp);
+            U8_NEXT(zodis.data() + i, offset, (int32_t)(zodis.size() - i), cp); // pavercia simboli esanti zodis.data()+i i unicode 32 bitu simboli
 
-            if (cp >= 0 && (u_isalpha(cp) || u_getCombiningClass(cp) > 0))
-                clean.append(zodis, i, offset);
+            if (cp >= 0 && (u_isalpha(cp) || u_getCombiningClass(cp) > 0)) // ziuri ar simbolio pavertimas pavyko ir ar jis abeceles simbolis arba kito simbolio dalis
+                clean.append(zodis, i, offset); // i svaru zodi prideda simboli (siuo atveju offset kiekio baitu nuo i)
 
-            i += offset;
+            i += offset; // prie i kaip iteratoriaus pridedamas offset, kad
         }
     }
 
-    return toLowerUnicode(clean);
+    return toLowerUnicode(clean); // paima sukurta svaru zodi ir ji padaro lowercase, kad nebutu zodziu su didziosiomis ir mazosiomis, kaip skirtingu raktu
 }
 
 
 std::string toLowerUnicode(const std::string& str) {
-    icu::UnicodeString us = icu::UnicodeString::fromUTF8(str);
-    us.toLower();
+    icu::UnicodeString us = icu::UnicodeString::fromUTF8(str); // pavercia UTF8 string'a i unicode character string klase
+    us.toLower(); // naudoja tos klases metodus ir kiekviena simboli pavercia mazuoju
     std::string result;
-    us.toUTF8String(result);
+    us.toUTF8String(result); // atgal pavercia i utf-8 string'a
     return result;
 }
 
@@ -158,15 +158,15 @@ void crossReference(std::stringstream& in) {
     
     std::string line;
     int lineNum = 0;
-    while (std::getline(in, line)) {
+    while (std::getline(in, line)) { // perskaito eilute
         ++lineNum;
         std::istringstream iss(line);
         std::string word;
         while (iss >> word) {
-            for (const auto &w : splitAndClean(word)) {
+            for (const auto &w : splitAndClean(word)) { // apvalo eilutes zodi
                 if (!w.empty()) {
-                    wordToLines[w].insert(lineNum);
-                    wordCounts[w]++;
+                    wordToLines[w].insert(lineNum); // i wordToLines map'a ideda i rakta w eilutes skaiciu.
+                    wordCounts[w]++; // i wordCounts map'a padidina rakto reiksme
                 }
             }
         }
@@ -175,9 +175,9 @@ void crossReference(std::stringstream& in) {
     std::ofstream out("cross_ref.txt");
     for (const auto& [word, lines] : wordToLines) {
         // Filtruojame pagal bendrą pasikartojimų skaičių tekste
-        if (wordCounts[word] > 1) {
+        if (wordCounts[word] > 1) { // jei rakto reiksme, t.y. zodis pasikartoja daugiau nei karta tai isveda ji
             out << word << ": ";
-            for (auto it = lines.begin(); it != lines.end(); ++it) {
+            for (auto it = lines.begin(); it != lines.end(); ++it) { // isveda eilutes, kuriose yra zodis
                 if (it != lines.begin()) out << ", ";
                 out << *it;
             }
@@ -186,31 +186,31 @@ void crossReference(std::stringstream& in) {
     }
 }
 
-void extractUrls(std::stringstream& in) {
+void extractUrls(std::stringstream& in) { // faila iveda i content string'a
     std::string content((std::istreambuf_iterator<char>(in)),
                          std::istreambuf_iterator<char>());
-    std::regex url_regex(R"((https?://)?(www\.)?([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})(/[^\s]*)?)");
+    std::regex url_regex(R"((https?://)?(www\.)?([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})(/[^\s]*)?)"); // regex pagal kuri ieskome ar tai url
     std::set<std::string> found;
     std::sregex_iterator it(content.begin(), content.end(), url_regex);
-    std::sregex_iterator end;
-    std::unordered_set<std::string> tlds = loadTlds("tlds-alpha-by-domain.txt");
+    std::sregex_iterator end; // surandame url
+    std::unordered_set<std::string> tlds = loadTlds("tlds-alpha-by-domain.txt"); // uzkrauname TLDS faila
     for (; it != end; ++it) {
-        std::string domain = (*it)[3];
-        size_t last_dot = domain.rfind('.');
-        if (last_dot != std::string::npos) {
-            std::string tld = domain.substr(last_dot + 1);
-            if (tlds.find(tld) != tlds.end()) {
-                found.insert(it->str());
+        std::string domain = (*it)[3]; // istraukia domena
+        size_t last_dot = domain.rfind('.'); // suranda paskutini taska
+        if (last_dot != std::string::npos) { // jei rado taska, tai
+            std::string tld = domain.substr(last_dot + 1); // paima domeno galune t.y. lt, gov ir t.t.
+            if (tlds.find(tld) != tlds.end()) { // patikrina ar domenas egzistuoja tlds rinkiny
+                found.insert(it->str()); // rasta domena prideda i rastu domenu set'a
             }
         }
     }
     std::ofstream out("urls.txt");
-    for (const auto& url : found) {
+    for (const auto& url : found) { // isveda rastu domenu set'a i urls.txt faila
         out << url << "\n";
     }
 }
 
-std::unordered_set<std::string> loadTlds(const std::string& path) {
+std::unordered_set<std::string> loadTlds(const std::string& path) { // uzkrauna tlds faila mazosiomis
     std::ifstream in(path);
     std::unordered_set<std::string> tlds;
     std::string line;
@@ -230,21 +230,21 @@ std::vector<std::string> splitAndClean(const std::string& zodis) {
     size_t splitPos = std::string::npos;
     size_t splitLen = 0;
     for (const auto& sep : separators) {
-        size_t pos = zodis.find(sep);
-        if (pos != std::string::npos && (splitPos == std::string::npos || pos < splitPos)) {
+        size_t pos = zodis.find(sep); // bando surast skirties zenkla "-" ir t.t.
+        if (pos != std::string::npos && (splitPos == std::string::npos || pos < splitPos)) { // patikrina ar rado skirties zenkla, ar nera nustatyta jo pozicija, arba jei yra tai gal naujai rasto zenklo pozicija mazesne, t.y. bandom rast pati kairini
             splitPos = pos;
             splitLen = sep.size();
         }
     }
 
-    if (splitPos == std::string::npos) {
+    if (splitPos == std::string::npos) { // jei nerado skirties zenklu, tai grazina svaru zodi
         std::string cleaned = cleanZodis(zodis);
         if (!cleaned.empty()) return { cleaned };
         return {};
     }
 
     std::vector<std::string> result;
-    for (const std::string& part : {
+    for (const std::string& part : { // buvusio zodzio dalis rekursijos budu toliau skaido, galu gale apvalo ir grazina kaip rezultata.
         zodis.substr(0, splitPos),
         zodis.substr(splitPos + splitLen)
     }) {
@@ -254,7 +254,7 @@ std::vector<std::string> splitAndClean(const std::string& zodis) {
     return result;
 }
 
-void extractZodziai(std::stringstream& in)
+void extractZodziai(std::stringstream& in) // isvedam zodzius ir ju pasikartojimu kieki.
 {
     std::map<std::string, int> zodziai;
     std::string zodis;
