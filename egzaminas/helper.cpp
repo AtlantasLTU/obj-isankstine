@@ -1,0 +1,148 @@
+#include "helper.h"
+
+int menu()
+{
+    return gautiSkaiciu("Pasirinkite programos eigą:\n1 - skaityti tekstą iš failo,\n2 - generuoti tik pažymius,\n3 - generuoti studentų vardus, pavardės ir pažymius,\n4 - skaityti studentus iš failo,\n5 - testavimas su failais,\n6 - generuoti failą,\n7 - testuoti klasę Studentas,\n8 - nuosavo vektoriaus ir STL vektoriaus palyginimas,\n9 - baigti darbą: ", 1, 9);
+}
+
+int gautiSkaiciu(const std::string &pranešimas, int min, int max, bool galiButiTuscia /* = false */)
+{
+    std::string ivestis;
+    while (true) {
+        std::cout << pranešimas;
+
+        if (!std::getline(std::cin, ivestis)) {
+            if (std::cin.eof()) 
+                cinEOFgaudymas();
+            continue;
+        }
+
+        // ivesties nutraukimas su ENTER
+        if (galiButiTuscia && ivestis.empty()) return -1;
+
+        try {
+            // 
+            if (!arTikSkaicius(ivestis)) throw std::invalid_argument("Ne skaičius");
+
+            int skaicius = std::stoi(ivestis);
+
+            //tikriname ar ivestas skaicius atitinka nuo maziausio leistino iki didziausio leistino
+            if (skaicius >= min && skaicius <= max) {
+                return skaicius;
+            } else {
+                std::cout << "Klaida, skaičius turi būti tarp " << min << " ir " << max << "!\n";
+            }
+        } catch (...) {
+            std::cout << "Klaida, įveskite sveikąjį skaičių!\n";
+        }
+    }
+}
+
+bool arTikSkaicius(const std::string& eilute)
+{ // jei eilute tuscia grazinama false, std::all_of pereina nuo eilutes.begin() pradzios iki galo eilutes.end() per kiekviena simboli, kiekvienam simboliui jei jis skaicius ar tarpas grazina true, jei tai tiesiog raide - grazinama false ir toliau eilute nebetikrinama
+    return !eilute.empty() && 
+    std::all_of(eilute.begin(), eilute.end(), [](unsigned char simbolis) 
+    {
+        return std::isdigit(simbolis) || std::isspace(simbolis);
+    });
+}
+
+void cinEOFgaudymas()
+{
+    if (std::cin.eof())
+    { // apsauga nuo CTRL+D (linux), CTRL+Z (windows)
+        throw std::runtime_error("Įvesties pabaiga (EOF). Darbas su programa baigtas");
+    }
+    std::cin.clear(); // atstatome std::cin fail flag'a
+}
+
+void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const std::string& vieta)
+{
+    std::vector<std::filesystem::directory_entry> failai;
+    std::vector<int> rezervai;
+
+    for(auto &failas : std::filesystem::directory_iterator(vieta))
+    {
+        if(!failas.is_regular_file())
+            continue;
+
+        if(failas.path().extension() != ".txt")
+            continue;
+        
+        std::string vardas = failas.path().filename().string();
+
+        failai.push_back(failas);
+    }
+
+    if(failai.empty())
+    {
+        std::cout << "Nerasta tekstinių failų vietoje: " << vieta << "\n";
+        egzistuoja = false;
+    } 
+    else 
+    {
+        std::cout << "Pasirinkite failą:\n";
+        for(int i = 0; i < failai.size(); i++)
+        {
+            std::cout << (i + 1) << ": " << failai.at(i).path().filename().string() << "\n";
+        }
+
+        int pasirinkimas = gautiSkaiciu("Įveskite failo numerį: ", 1, failai.size(), false);
+        failoPavadinimas = failai.at(pasirinkimas-1).path().filename().string();
+        egzistuoja = true;
+    }
+}
+
+std::string cleanZodis(const std::string& zodis) {
+    std::string clean;
+    const std::string quotes[] = { "„", "“", """, """, "«", "»", "‹", "›" };
+    
+    size_t i = 0;
+    while (i < zodis.size()) {
+        unsigned char c = zodis[i];
+
+        bool isQuote = false;
+        for (const auto& q : quotes) {
+            if (zodis.compare(i, q.size(), q) == 0) {
+                isQuote = true;
+                i += q.size();
+                break;
+            }
+        }
+        if (isQuote) continue;
+
+        // ASCII: skip punctuation, keep everything else
+        if (c <= 0x7F) {
+            if (!std::ispunct(c) && !std::isdigit(c))
+                clean += static_cast<char>(c);
+            i++;
+        } else {
+            // Non-quote multi-byte char (e.g. Lithuanian letters) — keep as-is
+            size_t charLen = (c >= 0xF0) ? 4 : (c >= 0xE0) ? 3 : 2;
+            clean.append(zodis, i, charLen);
+            i += charLen;
+        }
+    }
+
+    return clean;
+}
+
+/* bool filtras(char s) {
+    if((s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z')) {
+        return true;
+    }
+    
+    // Lithuanian lowercase letters
+    if(s == 'ą' || s == 'č' || s == 'ę' || s == 'ė' || 
+       s == 'į' || s == 'š' || s == 'ų' || s == 'ū' || s == 'ž') {
+        return true;
+    }
+    
+    // Lithuanian uppercase letters
+    if(s == 'Ą' || s == 'Č' || s == 'Ę' || s == 'Ė' || 
+       s == 'Į' || s == 'Š' || s == 'Ų' || s == 'Ū' || s == 'Ž') {
+        return true;
+    }
+    
+    return false;
+} */
