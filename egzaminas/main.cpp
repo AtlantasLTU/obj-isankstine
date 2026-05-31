@@ -12,7 +12,6 @@ int main(){
     }
     std::ifstream in(failoPavadinimas);
     std::string zodis;
-    std::cout << zodis << "\n";
     while(in >> zodis)
     {
         zodis = cleanZodis(zodis);
@@ -26,10 +25,8 @@ int main(){
     for(auto X : zodziai)
     {
         if(X.second>1)
-            std::cout << X.first << " " << X.second << std::endl;
-
-        sum+=X.second;
+            out << X.first << " " << X.second << std::endl;
     }
-    std::cout << sum << std::endl;
+    crossReference(failoPavadinimas);
     return 0;
 }

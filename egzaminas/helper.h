@@ -4,6 +4,8 @@
 #include <unicode/unistr.h>
 #include <unicode/uchar.h>
 #include <unicode/utf8.h>
+#include <map>
+#include <set>
 #include "main.h"
 
 /**
@@ -44,7 +46,8 @@ void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const st
 
 std::string cleanZodis(const std::string& zodis);
 
-
 std::string toLowerUnicode(const std::string& zodis);
+
+void crossReference(const std::string& fileName);
 
 #endif

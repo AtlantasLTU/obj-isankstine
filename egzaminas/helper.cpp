@@ -148,3 +148,33 @@ std::string toLowerUnicode(const std::string& str) {
     us.toUTF8String(result);
     return result;
 }
+
+void crossReference(const std::string& fileName) {
+    std::ifstream in(fileName);
+    std::map<std::string, std::set<int>> wordToLines;
+    std::string line;
+    int lineNum = 0;
+    while (std::getline(in, line)) {
+        ++lineNum;
+        std::istringstream iss(line);
+        std::string word;
+        while (iss >> word) {
+            word = cleanZodis(word);
+            if (!word.empty()) {
+                wordToLines[word].insert(lineNum);
+            }
+        }
+    }
+
+    std::ofstream out("cross_ref.txt");
+    for (const auto& [word, lines] : wordToLines) {
+        if (lines.size()>1) {
+            out << word << ": ";
+            for (auto it = lines.begin(); it != lines.end(); ++it) {
+                if (it != lines.begin()) out << ", ";
+                out << *it;
+            }
+            out << "\n";
+        }
+    }
+}
