@@ -8,13 +8,14 @@
 #include <set>
 #include <regex>
 #include <unordered_set>
-#include "main.h"
-
-/**
- * @brief Parodo pagrindinį meniu ir grąžina vartotojo pasirinkimą.
- * @return Pasirinkimo numeris (1-9).
- */
-int menu();
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <filesystem>
+#include <algorithm>
+#include <cctype>
+#include <sstream>
 
 /**
  * @brief Nuskaito sveikąjį skaičių iš konsolės su patikrinimais.
@@ -50,10 +51,14 @@ std::string cleanZodis(const std::string& zodis);
 
 std::string toLowerUnicode(const std::string& zodis);
 
-void crossReference(const std::string& fileName);
+void crossReference(std::stringstream& in);
 
-void extractUrls(const std::string& fileName);
+void extractUrls(std::stringstream& in);
 
 std::unordered_set<std::string> loadTlds(const std::string& path);
+
+std::vector<std::string> splitAndClean(const std::string& zodis);
+
+void extractZodziai(std::stringstream& in);
 
 #endif

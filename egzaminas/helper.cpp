@@ -1,10 +1,5 @@
 #include "helper.h"
 
-int menu()
-{
-    return gautiSkaiciu("Pasirinkite programos eigą:\n1 - skaityti tekstą iš failo,\n2 - generuoti tik pažymius,\n3 - generuoti studentų vardus, pavardės ir pažymius,\n4 - skaityti studentus iš failo,\n5 - testavimas su failais,\n6 - generuoti failą,\n7 - testuoti klasę Studentas,\n8 - nuosavo vektoriaus ir STL vektoriaus palyginimas,\n9 - baigti darbą: ", 1, 9);
-}
-
 int gautiSkaiciu(const std::string &pranešimas, int min, int max, bool galiButiTuscia /* = false */)
 {
     std::string ivestis;
@@ -59,7 +54,6 @@ void cinEOFgaudymas()
 void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const std::string& vieta)
 {
     std::vector<std::filesystem::directory_entry> failai;
-    std::vector<int> rezervai;
 
     for(auto &failas : std::filesystem::directory_iterator(vieta))
     {
@@ -68,6 +62,16 @@ void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const st
 
         if(failas.path().extension() != ".txt")
             continue;
+
+        std::string vardas = failas.path().filename().string();
+
+        if(vardas == "urls.txt" ||
+            vardas == "cross_ref.txt" ||
+            vardas == "zodziai.txt" ||
+            vardas == "tlds-alpha-by-domain.txt"
+        ) {
+            continue;
+        }
 
         failai.push_back(failas);
     }
@@ -94,10 +98,10 @@ void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const st
 std::string cleanZodis(const std::string& zodis) {
     std::string clean;
     const std::string quotes[] = { 
-        "„", "“", """, """, 
-        "«", "»", "‹", "›", 
-        "–", "—", "•", "−", 
-        "′", "’", "■", "\xE2\x80\x8B",
+        "„", "“", "\"", "«",
+        "»", "‹", "›", "–",
+        "—", "•", "−", "′",
+        "’", "■", "\xE2\x80\x8B",
         "\xE2\x80\x8C",
         "\xE2\x80\x8D",
         "\xE2\x80\x8E",
@@ -121,19 +125,18 @@ std::string cleanZodis(const std::string& zodis) {
         }
         if (isQuote) continue;
         if (c <= 0x7F) {
-            if (!std::ispunct(c) && !std::isdigit(c))
+            if (!std::ispunct(c) && !std::isdigit(c) && !isspace(c))
                 clean += static_cast<char>(c);
             i++;
         } else {
-            size_t charLen = (c >= 0xF0) ? 4 : (c >= 0xE0) ? 3 : 2;
             UChar32 cp;
             int32_t offset = 0;
-            U8_NEXT(zodis.data() + i, offset, (int32_t)charLen, cp);
+            U8_NEXT(zodis.data() + i, offset, (int32_t)(zodis.size() - i), cp);
 
-            if (u_isalpha(cp) || u_getCombiningClass(cp) > 0)
-                clean.append(zodis, i, charLen);
+            if (cp >= 0 && (u_isalpha(cp) || u_getCombiningClass(cp) > 0))
+                clean.append(zodis, i, offset);
 
-            i += charLen;
+            i += offset;
         }
     }
 
@@ -149,9 +152,10 @@ std::string toLowerUnicode(const std::string& str) {
     return result;
 }
 
-void crossReference(const std::string& fileName) {
-    std::ifstream in(fileName);
+void crossReference(std::stringstream& in) {
     std::map<std::string, std::set<int>> wordToLines;
+    std::map<std::string, int> wordCounts;
+    
     std::string line;
     int lineNum = 0;
     while (std::getline(in, line)) {
@@ -159,16 +163,19 @@ void crossReference(const std::string& fileName) {
         std::istringstream iss(line);
         std::string word;
         while (iss >> word) {
-            word = cleanZodis(word);
-            if (!word.empty()) {
-                wordToLines[word].insert(lineNum);
+            for (const auto &w : splitAndClean(word)) {
+                if (!w.empty()) {
+                    wordToLines[w].insert(lineNum);
+                    wordCounts[w]++;
+                }
             }
         }
     }
 
     std::ofstream out("cross_ref.txt");
     for (const auto& [word, lines] : wordToLines) {
-        if (lines.size()>1) {
+        // Filtruojame pagal bendrą pasikartojimų skaičių tekste
+        if (wordCounts[word] > 1) {
             out << word << ": ";
             for (auto it = lines.begin(); it != lines.end(); ++it) {
                 if (it != lines.begin()) out << ", ";
@@ -179,17 +186,16 @@ void crossReference(const std::string& fileName) {
     }
 }
 
-void extractUrls(const std::string& fileName) {
-    std::ifstream in(fileName);
+void extractUrls(std::stringstream& in) {
     std::string content((std::istreambuf_iterator<char>(in)),
                          std::istreambuf_iterator<char>());
     std::regex url_regex(R"((https?://)?(www\.)?([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})(/[^\s]*)?)");
     std::set<std::string> found;
     std::sregex_iterator it(content.begin(), content.end(), url_regex);
     std::sregex_iterator end;
+    std::unordered_set<std::string> tlds = loadTlds("tlds-alpha-by-domain.txt");
     for (; it != end; ++it) {
         std::string domain = (*it)[3];
-        std::unordered_set<std::string> tlds = loadTlds("tlds-alpha-by-domain.txt");
         size_t last_dot = domain.rfind('.');
         if (last_dot != std::string::npos) {
             std::string tld = domain.substr(last_dot + 1);
@@ -214,4 +220,56 @@ std::unordered_set<std::string> loadTlds(const std::string& path) {
         tlds.insert(line);
     }
     return tlds;
+}
+
+std::vector<std::string> splitAndClean(const std::string& zodis) {
+    const std::string separators[] = { 
+        "–", "—", "−", "."
+    };
+
+    size_t splitPos = std::string::npos;
+    size_t splitLen = 0;
+    for (const auto& sep : separators) {
+        size_t pos = zodis.find(sep);
+        if (pos != std::string::npos && (splitPos == std::string::npos || pos < splitPos)) {
+            splitPos = pos;
+            splitLen = sep.size();
+        }
+    }
+
+    if (splitPos == std::string::npos) {
+        std::string cleaned = cleanZodis(zodis);
+        if (!cleaned.empty()) return { cleaned };
+        return {};
+    }
+
+    std::vector<std::string> result;
+    for (const std::string& part : {
+        zodis.substr(0, splitPos),
+        zodis.substr(splitPos + splitLen)
+    }) {
+        auto sub = splitAndClean(part);
+        result.insert(result.end(), sub.begin(), sub.end());
+    }
+    return result;
+}
+
+void extractZodziai(std::stringstream& in)
+{
+    std::map<std::string, int> zodziai;
+    std::string zodis;
+    while (in >> zodis)
+    {
+        for (const auto &w : splitAndClean(zodis))
+        {
+            if (!w.empty())
+                ++zodziai[w];
+        }
+    }
+    std::ofstream out("zodziai.txt");
+    for (auto X : zodziai)
+    {
+        if (X.second > 1)
+            out << X.first << " " << X.second << "\n";
+    }
 }
