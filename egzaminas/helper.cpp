@@ -68,8 +68,6 @@ void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const st
 
         if(failas.path().extension() != ".txt")
             continue;
-        
-        std::string vardas = failas.path().filename().string();
 
         failai.push_back(failas);
     }
@@ -95,7 +93,19 @@ void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const st
 
 std::string cleanZodis(const std::string& zodis) {
     std::string clean;
-    const std::string quotes[] = { "„", "“", """, """, "«", "»", "‹", "›", "–", "—", "•", "−"};
+    const std::string quotes[] = { 
+        "„", "“", """, """, 
+        "«", "»", "‹", "›", 
+        "–", "—", "•", "−", 
+        "′", "’", "■", "\xE2\x80\x8B",
+        "\xE2\x80\x8C",
+        "\xE2\x80\x8D",
+        "\xE2\x80\x8E",
+        "\xE2\x80\x8F",
+        "\xE2\x80\xAB",
+        "\xE2\x80\xAC",
+        "\xEF\xBB\xBF",
+    };
     
     size_t i = 0;
     while (i < zodis.size()) {
@@ -110,19 +120,31 @@ std::string cleanZodis(const std::string& zodis) {
             }
         }
         if (isQuote) continue;
-
-        // ASCII: skip punctuation, keep everything else
         if (c <= 0x7F) {
             if (!std::ispunct(c) && !std::isdigit(c))
                 clean += static_cast<char>(c);
             i++;
         } else {
-            // Non-quote multi-byte char (e.g. Lithuanian letters) — keep as-is
             size_t charLen = (c >= 0xF0) ? 4 : (c >= 0xE0) ? 3 : 2;
-            clean.append(zodis, i, charLen);
+            UChar32 cp;
+            int32_t offset = 0;
+            U8_NEXT(zodis.data() + i, offset, (int32_t)charLen, cp);
+
+            if (u_isalpha(cp) || u_getCombiningClass(cp) > 0)
+                clean.append(zodis, i, charLen);
+
             i += charLen;
         }
     }
 
-    return clean;
+    return toLowerUnicode(clean);
+}
+
+
+std::string toLowerUnicode(const std::string& str) {
+    icu::UnicodeString us = icu::UnicodeString::fromUTF8(str);
+    us.toLower();
+    std::string result;
+    us.toUTF8String(result);
+    return result;
 }

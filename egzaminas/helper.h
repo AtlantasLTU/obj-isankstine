@@ -1,6 +1,9 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+#include <unicode/unistr.h>
+#include <unicode/uchar.h>
+#include <unicode/utf8.h>
 #include "main.h"
 
 /**
@@ -41,6 +44,7 @@ void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const st
 
 std::string cleanZodis(const std::string& zodis);
 
-bool filtras(char s);
+
+std::string toLowerUnicode(const std::string& zodis);
 
 #endif
