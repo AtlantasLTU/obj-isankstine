@@ -95,7 +95,7 @@ void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const st
 
 std::string cleanZodis(const std::string& zodis) {
     std::string clean;
-    const std::string quotes[] = { "„", "“", """, """, "«", "»", "‹", "›" };
+    const std::string quotes[] = { "„", "“", """, """, "«", "»", "‹", "›", "–", "—", "•", "−"};
     
     size_t i = 0;
     while (i < zodis.size()) {
@@ -126,23 +126,3 @@ std::string cleanZodis(const std::string& zodis) {
 
     return clean;
 }
-
-/* bool filtras(char s) {
-    if((s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z')) {
-        return true;
-    }
-    
-    // Lithuanian lowercase letters
-    if(s == 'ą' || s == 'č' || s == 'ę' || s == 'ė' || 
-       s == 'į' || s == 'š' || s == 'ų' || s == 'ū' || s == 'ž') {
-        return true;
-    }
-    
-    // Lithuanian uppercase letters
-    if(s == 'Ą' || s == 'Č' || s == 'Ę' || s == 'Ė' || 
-       s == 'Į' || s == 'Š' || s == 'Ų' || s == 'Ū' || s == 'Ž') {
-        return true;
-    }
-    
-    return false;
-} */

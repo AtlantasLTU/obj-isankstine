@@ -37,7 +37,7 @@ void cinEOFgaudymas();
  * @param failoPavadinimas Pasirinkto failo pavadinimas.
  * @param vieta direktorija, kurioje numatyta ieškoti failų (numatyta ".").
  */
-void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const std::string& vieta = "..");
+void failoPasirinkimas(bool &egzistuoja, std::string &failoPavadinimas, const std::string& vieta = ".");
 
 std::string cleanZodis(const std::string& zodis);
 

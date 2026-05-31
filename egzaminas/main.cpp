@@ -8,7 +8,7 @@ int main(){
     if(!egzistuoja){
         return 0;
     }
-    std::ifstream in("../"+failoPavadinimas);
+    std::ifstream in(failoPavadinimas);
     std::string zodis;
     std::cout << zodis << "\n";
     while(in >> zodis)
