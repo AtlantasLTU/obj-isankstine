@@ -273,3 +273,26 @@ void extractZodziai(std::stringstream& in) // isvedam zodzius ir ju pasikartojim
             out << X.first << " " << X.second << "\n";
     }
 }
+
+void extractUnique(std::stringstream& in)
+{
+    std::map<std::string, int> zodziai;
+    std::string zodis;
+    while (in >> zodis)
+    {
+        for (const auto &w : splitAndClean(zodis))
+        {
+            if (!w.empty() && w.find("omp") != std::string::npos)
+                ++zodziai[w];
+        }
+    }
+    std::ofstream out("unique.txt");
+    int sum = 0;
+    for (auto X : zodziai)
+    {
+        out << X.first << " " << X.second << "\n";
+        sum += X.second;
+    }
+    out << "Zodziai su \"omp\" bendrai: " << sum << "\n";
+    out << "Zodziai su \"omp\" unikalus: " << zodziai.size() << "\n";
+}

@@ -17,5 +17,8 @@ int main(){
     buffer.clear();
     buffer.seekg(0);
     extractUrls(buffer);
+    buffer.clear();
+    buffer.seekg(0);
+    extractUnique(buffer);
     return 0;
 }

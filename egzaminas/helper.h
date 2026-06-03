@@ -61,4 +61,6 @@ std::vector<std::string> splitAndClean(const std::string& zodis);
 
 void extractZodziai(std::stringstream& in);
 
+void extractUnique(std::stringstream& in);
+
 #endif
